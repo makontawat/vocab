@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แฟลชการ์ดคำศัพท์เนื้อสัตว์ (Meat Vocabulary)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fbfbfa 0%, #f4f4f5 50%, #e4e4e7 100%);
+            user-select: none;
+            min-height: 100vh;
+        }
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .flip-card.flipped .transform-style-3d {
+            transform: rotateY(180deg);
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-3 sm:p-5 text-zinc-800">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-zinc-900/95 border border-zinc-700 text-zinc-50 px-5 py-3 rounded-2xl shadow-2xl z-50 hidden flex items-center gap-2.5 backdrop-blur-md transition-all duration-300">
+        <i id="toastIcon" class="ph ph-info text-xl text-rose-400"></i>
+        <span id="toastMessage" class="text-sm font-medium"></span>
+    </div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-lg bg-white/95 border border-zinc-200/90 rounded-3xl p-4 sm:p-6 shadow-2xl shadow-zinc-900/10 flex flex-col gap-3.5 relative my-auto backdrop-blur-md">
+        
+        <!-- Header Section -->
+        <div class="flex justify-between items-center pb-2 border-b border-zinc-100">
+            <div>
+                <h1 class="text-xl font-extrabold text-zinc-900 flex items-center gap-2 tracking-tight">
+                    <span class="p-2 rounded-xl bg-rose-500/10 text-rose-700 border border-rose-500/20 flex items-center justify-center text-lg">
+                        <i class="ph-fill ph-fork-knife"></i>
+                    </span>
+                    Meat & Protein
+                </h1>
+                <p class="text-xs text-zinc-500 mt-0.5">รวมศัพท์เนื้อสัตว์และโปรตีน (40 คำ - ไม่มีสัญลักษณ์ใบ้)</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button onclick="toggleStudyMode()" id="studyModeBtn" title="สลับภาษาหน้า-หลัง" class="text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold py-1.5 px-2.5 rounded-xl border border-zinc-300/60 transition flex items-center gap-1">
+                    <i class="ph ph-arrows-left-right font-bold"></i> <span id="studyModeLabel">EN → TH</span>
+                </button>
+                <button onclick="confirmReset()" title="รีเซ็ตความจำ" class="text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold py-1.5 px-2.5 rounded-xl border border-zinc-300/60 transition flex items-center gap-1">
+                    <i class="ph ph-arrow-counter-clockwise font-bold"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Category Filter Tabs -->
+        <div class="flex gap-1.5 overflow-x-auto no-scrollbar py-1">
+            <button onclick="changeFilter('all')" id="tab-all" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-rose-700 text-white shadow-sm transition">ทั้งหมด (40)</button>
+            <button onclick="changeFilter('meat_cuts')" id="tab-meat_cuts" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 transition">เนื้อสัตว์และชิ้นส่วน</button>
+            <button onclick="changeFilter('seafood_water')" id="tab-seafood_water" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 transition">กุ้ง สัตว์น้ำ และของทะเล</button>
+            <button onclick="changeFilter('poultry_egg')" id="tab-poultry_egg" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 transition">ไก่ เป็ด และเมนูไข่</button>
+            <button onclick="changeFilter('tofu')" id="tab-tofu" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 transition">กลุ่มเต้าหู้</button>
+        </div>
+
+        <!-- Dashboard Statistics -->
+        <div class="grid grid-cols-3 gap-2 bg-zinc-50 p-2.5 rounded-2xl border border-zinc-200/80 text-center">
+            <div class="flex flex-col">
+                <span class="text-[11px] text-zinc-500 font-medium">จำได้แล้ว</span>
+                <span id="statKnown" class="text-lg font-bold text-emerald-600">0</span>
+            </div>
+            <div class="flex flex-col border-x border-zinc-200">
+                <span class="text-[11px] text-zinc-500 font-medium">ยังจำไม่ได้</span>
+                <span id="statUnknown" class="text-lg font-bold text-rose-600">0</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-[11px] text-zinc-500 font-medium">คิวในรอบนี้</span>
+                <span id="statQueue" class="text-lg font-bold text-rose-700">0</span>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div>
+            <div class="flex justify-between items-center text-xs mb-1">
+                <span id="progressLabel" class="font-medium text-zinc-600">ความคืบหน้าของหมวดนี้</span>
+                <span id="progressPercent" class="font-bold text-rose-700">0%</span>
+            </div>
+            <div class="w-full bg-zinc-100 rounded-full h-2 overflow-hidden p-0.5 border border-zinc-200">
+                <div id="progressBar" class="bg-gradient-to-r from-rose-500 to-emerald-500 h-1 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Flashcard Box -->
+        <div id="cardContainer" class="relative w-full h-80 perspective-1000 cursor-pointer select-none flip-card group my-1.5" onclick="toggleFlip()">
+            <div id="flashcardInner" class="w-full h-full relative transform-style-3d shadow-xl rounded-3xl">
+                
+                <!-- Front Side -->
+                <div id="cardFront" class="absolute w-full h-full backface-hidden bg-gradient-to-br from-white via-zinc-50 to-rose-50/30 border-2 border-zinc-200 rounded-3xl flex flex-col justify-between p-6 transition-all duration-300">
+                    <div class="flex justify-between items-center">
+                        <span id="badgeFront" class="text-xs font-semibold px-3 py-1 rounded-full bg-zinc-100 text-zinc-700 border border-zinc-200">
+                            หมวดคำศัพท์
+                        </span>
+                        <button onclick="playAudio(event)" title="ฟังเสียงอ่านภาษาอังกฤษ" class="text-zinc-700 hover:text-white bg-zinc-100 hover:bg-rose-700 p-2.5 rounded-2xl border border-zinc-200 transition flex items-center justify-center shadow-sm">
+                            <i class="ph-fill ph-speaker-high text-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="text-center my-auto flex flex-col items-center justify-center py-4">
+                        <h2 id="mainTextFront" class="text-3xl sm:text-4xl font-extrabold text-zinc-900 tracking-tight font-inter">Frog</h2>
+                        <span id="subTextFront" class="text-xs sm:text-sm font-medium text-zinc-400 mt-2 block font-mono px-2">แตะเพื่อดูคำแปล</span>
+                    </div>
+
+                    <p class="text-center text-xs text-zinc-400 font-medium flex items-center justify-center gap-1.5">
+                        <i class="ph ph-hand-tap text-base text-rose-600 animate-bounce"></i> แตะการ์ดเพื่อดูคำตอบและรายละเอียด
+                    </p>
+                </div>
+
+                <!-- Back Side -->
+                <div id="cardBack" class="absolute w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-white via-zinc-50 to-orange-50/30 border-2 border-zinc-200 rounded-3xl flex flex-col justify-between p-6 transition-all duration-300">
+                    <div class="flex justify-between items-center">
+                        <span id="badgeBack" class="text-xs font-semibold px-3 py-1 rounded-full bg-zinc-100 text-zinc-700 border border-zinc-200">
+                            ความหมายและตัวอย่าง
+                        </span>
+                        <span id="cardCounterBack" class="text-xs font-mono font-bold text-zinc-400">#1 / 40</span>
+                    </div>
+
+                    <div class="my-auto space-y-2.5">
+                        <div class="text-center">
+                            <h3 id="mainTextBack" class="text-2xl sm:text-3xl font-extrabold text-zinc-900">กบ</h3>
+                            <span id="subTextBack" class="text-sm font-semibold text-rose-700 mt-1 block font-inter">Frog</span>
+                        </div>
+                        <div class="bg-zinc-50 border border-zinc-200 rounded-2xl p-3 text-left">
+                            <p class="text-[11px] text-zinc-500 font-semibold mb-1 flex items-center gap-1">
+                                <i class="ph-fill ph-book-open text-rose-600"></i> คำอ่าน / รายละเอียด:
+                            </p>
+                            <p id="descBack" class="text-xs sm:text-sm text-zinc-800 leading-relaxed font-normal"></p>
+                        </div>
+                        <div class="bg-rose-50/60 border border-rose-200/70 rounded-2xl p-2.5 text-left">
+                            <p class="text-[11px] text-rose-800 font-semibold mb-0.5 flex items-center gap-1">
+                                <i class="ph-fill ph-lightbulb text-rose-600"></i> ทริคช่วยจำ / รูปศัพท์:
+                            </p>
+                            <p id="hintBack" class="text-xs text-rose-900/90 leading-relaxed font-normal"></p>
+                        </div>
+                    </div>
+
+                    <p class="text-center text-xs text-zinc-400 font-medium">แตะเพื่อพลิกกลับ</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Main Action Buttons -->
+        <div class="grid grid-cols-2 gap-3 mt-0.5">
+            <button onclick="markCurrentCard('unknown')" class="flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 active:scale-95 text-white py-3.5 px-4 rounded-2xl shadow-lg shadow-rose-200 transition font-bold text-base">
+                <i class="ph-bold ph-x text-xl"></i> ยังไม่รู้ (สีแดง)
+            </button>
+            <button onclick="markCurrentCard('known')" class="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-95 text-white py-3.5 px-4 rounded-2xl shadow-lg shadow-emerald-200 transition font-bold text-base">
+                <i class="ph-bold ph-check text-xl"></i> จำได้แล้ว (สีเขียว)
+            </button>
+        </div>
+
+        <!-- Secondary Navigation Controls -->
+        <div class="grid grid-cols-2 gap-3 pt-0.5">
+            <button onclick="prevCard()" class="flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold py-2.5 rounded-xl border border-zinc-200 transition text-sm">
+                <i class="ph-bold ph-caret-left"></i> ย้อนกลับ
+            </button>
+            <button onclick="shuffleQueue()" class="flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-900 font-semibold py-2.5 rounded-xl border border-rose-200/80 transition text-sm">
+                <i class="ph-bold ph-shuffle"></i> สุ่มคิวคำศัพท์
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="fixed inset-0 bg-zinc-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center gap-4 border border-zinc-200">
+            <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-3xl mb-1 animate-bounce">
+                <i class="ph-bold ph-check-circle"></i>
+            </div>
+            <h2 class="text-2xl font-extrabold text-zinc-900">จำได้ครบทุกคำแล้ว!</h2>
+            <p class="text-zinc-600 text-sm leading-relaxed">
+                คุณจำคำศัพท์เนื้อสัตว์ ชิ้นส่วน และโปรตีนในหมวดนี้ได้ครบถ้วน 100% แล้ว เก่งมากครับ!
+            </p>
+            <div class="w-full flex flex-col gap-2 mt-2">
+                <button onclick="restartAll()" class="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-3 rounded-2xl shadow-lg shadow-rose-200 transition">
+                    ทบทวนอีกรอบตั้งแต่ต้น
+                </button>
+                <button onclick="closeModal()" class="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold py-2.5 rounded-2xl transition text-sm">
+                    ปิดหน้าต่างนี้
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Meat & Protein Vocabulary (40 items - strictly NO emojis)
+        const rawMeatData = [
+            { en: "Frog", th: "กบ", cat: "seafood_water", desc: "คำอ่าน: ฟร็อก | สัตว์สะเทินน้ำสะเทินบก เมนูอาหารเช่น กบทอดกระเทียม, ผัดเผ็ดกบ", hint: "คำพยางค์เดียวจำง่าย Frog = กบ" },
+            { en: "Fishbone", th: "ก้างปลา", cat: "seafood_water", desc: "คำอ่าน: ฟิช-โบน | กระดูกหรือโครงร่างแข็งในตัวปลา", hint: "Fish (ปลา) + Bone (กระดูก)" },
+            { en: "Pincer / Claw", th: "ก้ามปู", cat: "seafood_water", desc: "คำอ่าน: พิน-เซอร์ / คลอ | ส่วนระยางค์หนีบของปูหรือสัตว์มีเปลือก", hint: "Claw คือกรงเล็บ/ก้าม, Pincer คือคีมหนีบ/ก้ามหนีบ" },
+            { en: "Tiger prawn", th: "กุ้งกุลาดำ", cat: "seafood_water", desc: "คำอ่าน: ไท-เกอร์ พรอน | กุ้งทะเลขนาดใหญ่ ลายพาดสีเข้มคล้ายลายเสือ", hint: "Tiger (เสือ) + Prawn (กุ้งตัวใหญ่)" },
+            { en: "Prawn / Shrimp", th: "กุ้งชีแฮ้ (หรือกุ้งทั่วไป)", cat: "seafood_water", desc: "คำอ่าน: พรอน / ชริมป์ | กุ้งทะเลเปลือกบางเนื้อหวาน นิยมทำต้มยำหรือทอด", hint: "Prawn มักใช้เรียกกุ้งขนาดใหญ่ ส่วน Shrimp นิยมใช้เรียกกุ้งขนาดเล็ก" },
+            { en: "White prawn", th: "กุ้งแชบ๊วย", cat: "seafood_water", desc: "คำอ่าน: ไวต์ พรอน | กุ้งทะเลเปลือกสีขาวอมเหลือง เนื้อแน่นหวาน", hint: "White (สีขาว) + Prawn (กุ้ง)" },
+            { en: "Crayfish", th: "กุ้งนาง (กุ้งก่า/กุ้งน้ำจืด)", cat: "seafood_water", desc: "คำอ่าน: เคร-ฟิช | กุ้งน้ำจืดที่มีลักษณะคล้ายล็อบสเตอร์ขนาดย่อม มีก้ามเด่น", hint: "Crayfish คือกุ้งก้ามแดงหรือกุ้งน้ำจืด" },
+            { en: "Dried shrimp", th: "กุ้งแห้ง", cat: "seafood_water", desc: "คำอ่าน: ไดรด์ ชริมป์ | กุ้งต้มสุกแล้วตากแดดหรืออบจนแห้ง ใช้ในส้มตำและน้ำพริก", hint: "Dried (ทำให้แห้ง) + Shrimp (กุ้ง)" },
+            { en: "Ground dried shrimp", th: "กุ้งแห้งป่น", cat: "seafood_water", desc: "คำอ่าน: เกรานด์ ไดรด์ ชริมป์ | กุ้งแห้งนำมาโขลกหรือบดละเอียด โรยหน้าอาหาร", hint: "Ground มาจากกริยา Grind ที่แปลว่า บด/โขลก" },
+            { en: "Lobster", th: "กุ้งใหญ่ / กุ้งมังกร", cat: "seafood_water", desc: "คำอ่าน: ลอบ-สเตอร์ | กุ้งทะเลขนาดใหญ่ เปลือกหนาแข็ง มีราคาแพง", hint: "ทับศัพท์ Lobster = กุ้งมังกรหรือกุ้งล็อบสเตอร์" },
+            { en: "Chicken", th: "ไก่", cat: "poultry_egg", desc: "คำอ่าน: ชิค-เคน | เนื้อสัตว์ปีกที่นิยมบริโภคมากที่สุดในโลก", hint: "คำพื้นฐาน Chicken = ไก่" },
+            { en: "Swirl to form thin layer", th: "ไข่กลอกเป็นแผ่นบางๆ", cat: "poultry_egg", desc: "คำอ่าน: สเวิร์ล ทู ฟอร์ม ธิน เลเยอร์ | เทคนิคการเอียงกระทะให้ไข่เคลือบแบนบาง เช่น ทำไข่ห่อ", hint: "Swirl (กลอก/วน) + Form (สร้างรูป) + Thin layer (แผ่นบาง)" },
+            { en: "Egg", th: "ไข่ไก่ (หรือไข่ทั่วไป)", cat: "poultry_egg", desc: "คำอ่าน: เอ็ก | แหล่งโปรตีนพื้นฐานและวัตถุดิบสำคัญในครัว", hint: "Egg = ไข่" },
+            { en: "Egg white / White egg", th: "ไข่ขาว", cat: "poultry_egg", desc: "คำอ่าน: ไวต์ เอ็ก / เอ็ก ไวต์ | ส่วนของเหลวใสโปรตีนสูงที่หุ้มไข่แดง", hint: "White (สีขาว) + Egg (ไข่)" },
+            { en: "Salted egg", th: "ไข่เค็ม", cat: "poultry_egg", desc: "คำอ่าน: ซอล-เท็ด เอ็ก | ไข่เป็ดที่นำไปพอกดินสอพองผสมเกลือจนเค็มมัน", hint: "Salted (หมักเกลือ) + Egg (ไข่)" },
+            { en: "Yolk", th: "ไข่แดง", cat: "poultry_egg", desc: "คำอ่าน: โยก (ไม่ออกเสียง L) | ส่วนไขมันและสารอาหารเข้มข้นตรงกลางฟองไข่", hint: "ออกเสียงว่า โยก (ไม่พูด โยล์ก)" },
+            { en: "Boiled egg", th: "ไข่ต้ม", cat: "poultry_egg", desc: "คำอ่าน: บอยล์ด เอ็ก | ไข่ที่นำไปต้มในน้ำเดือดจนสุกตามระดับที่ต้องการ", hint: "Boiled (ต้มสุก) + Egg (ไข่)" },
+            { en: "Quail egg", th: "ไข่นกกระทา", cat: "poultry_egg", desc: "คำอ่าน: ควอล เอ็ก / คเวล เอ็ก | ไข่ฟองเล็กมีลายจุด นิยมใส่ในกระเพาะปลาหรือทอด", hint: "Quail = นกกระทา" },
+            { en: "Duck", th: "เป็ด", cat: "poultry_egg", desc: "คำอ่าน: ดั๊ก | สัตว์ปีกเนื้อแน่น นิยมนำมาย่าง พะโล้ หรืออบ", hint: "Duck = เป็ด" },
+            { en: "Roe", th: "ไข่ปลาทั้งลอย / ไข่ปลาทั้งรัง", cat: "seafood_water", desc: "คำอ่าน: โร | ก้อนรังไข่ปลาหรือไข่ปลาในตัวเมีย เช่น ไข่ปลาเรียวเซียว ไข่ปลาแซลมอน", hint: "Roe คำสั้น 3 ตัวอักษรแปลว่าไข่ปลา" },
+            { en: "Crab's spawn", th: "ไข่ปู", cat: "seafood_water", desc: "คำอ่าน: แครบส์ สปอน | ไข่ที่ติดอยู่บริเวณหน้าอกหรือกระดองปูตัวเมีย", hint: "Crab (ปู) + Spawn (ไข่ของสัตว์น้ำ)" },
+            { en: "Duck egg", th: "ไข่เป็ด", cat: "poultry_egg", desc: "คำอ่าน: ดั๊ก เอ็ก | ไข่เปลือกหนาสีขาวนวล ไข่แดงสีส้มสด นิยมทำไข่พะโล้และไข่เค็ม", hint: "Duck (เป็ด) + Egg (ไข่)" },
+            { en: "Dark egg / Century egg", th: "ไข่เยี่ยวม้า", cat: "poultry_egg", desc: "คำอ่าน: ดาร์ก เอ็ก / เซน-ชู-รี เอ็ก | ไข่เป็ดหมักในปูนขาว เกลือ และใบชาจนไข่ขาวกลายเป็นเจลสีน้ำตาลเข้ม", hint: "Dark egg (ไข่สีเข้ม) หรือ Century egg (ไข่ร้อยปี)" },
+            { en: "Pork liver", th: "ตับหมู", cat: "meat_cuts", desc: "คำอ่าน: พอร์ก ลิ-เวอร์ | เครื่องในหมูที่มีธาตุเหล็กสูง นิยมใส่ในต้มเลือดหมูหรือผัดกุยช่าย", hint: "Pork (เนื้อหมู) + Liver (ตับ)" },
+            { en: "Bean curd", th: "เต้าหู้", cat: "tofu", desc: "คำอ่าน: บีน เคิร์ด | ผลิตภัณฑ์แปรรูปจากการตกตะกอนโปรตีนน้ำนมถั่วเหลือง", hint: "Bean (ถั่ว) + Curd (ลิ่มน้ำนมตกตะกอน)" },
+            { en: "Soft white bean curd", th: "เต้าหู้ขาวอ่อน", cat: "tofu", desc: "คำอ่าน: ซอฟต์ ไวต์ บีน เคิร์ด | เต้าหู้เนื้อนุ่มเนียน กลิ่นหอมถั่วเหลือง ใส่ในแกงจืด", hint: "Soft (นุ่ม) + White (ขาว) + Bean curd" },
+            { en: "Fermented bean curd", th: "เต้าหู้ยี้", cat: "tofu", desc: "คำอ่าน: เฟอร์-เมน-เท็ด บีน เคิร์ด | เต้าหู้หมักเกลือและข้าวแดง รสเค็มมัน ใช้ใส่เย็นตาโฟ", hint: "Fermented = ผ่านการหมักดอง" },
+            { en: "Rock cod", th: "ปลาเก๋า", cat: "seafood_water", desc: "คำอ่าน: ร็อก คอด | ปลาทะเลเนื้อแน่นหวาน นิยมนำมานึ่งซีอิ๊วหรือต้มยำ", hint: "Rock cod หรือ Grouper (ปลาเก๋า)" },
+            { en: "Yellow bean curd", th: "เต้าหู้เหลือง", cat: "tofu", desc: "คำอ่าน: เยล-โลว์ บีน เคิร์ด | เต้าหู้แผ่นที่นำไปต้มกับขมิ้นจนผิวด้านนอกเป็นสีเหลือง นิยมใส่ผัดไทย", hint: "Yellow (สีเหลือง) + Bean curd" },
+            { en: "Drumstick", th: "น่องไก่", cat: "poultry_egg", desc: "คำอ่าน: ดรัม-สติ๊ก | ชิ้นส่วนขาไก่ท่อนล่างที่มีรูปทรงคล้ายไม้ตีกลอง", hint: "Drum (กลอง) + Stick (ไม้ตี)" },
+            { en: "Venison", th: "เนื้อกวาง", cat: "meat_cuts", desc: "คำอ่าน: เว-นิ-ซัน | เนื้อกวางป่าหรือกวางเลี้ยง มีไขมันต่ำและรสสัมผัสเข้มข้น", hint: "Venison แปลเฉพาะเจาะจงว่าเนื้อกวาง" },
+            { en: "Mutton", th: "เนื้อแกะ (แกะโต)", cat: "meat_cuts", desc: "คำอ่าน: มัต-ตัน | เนื้อจากแกะที่โตเต็มวัย มีกลิ่นหอมเฉพาะตัว (ถ้าแกะเด็กเรียก Lamb)", hint: "Mutton = เนื้อแกะโต (Lamb = แกะเด็ก)" },
+            { en: "Salty sun-dried beef", th: "เนื้อเค็มแห้ง (เนื้อแดดเดียว)", cat: "meat_cuts", desc: "คำอ่าน: ซอล-ตี ซัน ไดรด์ บีฟ | เนื้อวัวหมักเกลือนำไปผึ่งแดดก่อนนำมาทอด", hint: "Salty (เค็ม) + Sun-dried (ตากแดด) + Beef (เนื้อวัว)" },
+            { en: "Chop", th: "เนื้อติดซี่โครง", cat: "meat_cuts", desc: "คำอ่าน: ช็อป | ชิ้นเนื้อติดกระดูกซี่โครง เช่น Pork chop หรือ Lamb chop", hint: "Chop = ชิ้นเนื้อติดกระดูกซี่โครง" },
+            { en: "Scraped fish meat", th: "เนื้อปลาขูด", cat: "seafood_water", desc: "คำอ่าน: สเครปต์ ฟิช มีต | เนื้อปลาที่ใช้ช้อนขูดออกจากก้าง เช่น ปลากราย นำมาฟาดทำทอดมัน", hint: "Scraped (ถูกขูด) + Fish meat (เนื้อปลา)" },
+            { en: "Veal", th: "เนื้อลูกวัว", cat: "meat_cuts", desc: "คำอ่าน: วีล | เนื้อจากลูกวัวอ่อน มีสีชมพูอ่อนและเนื้อนุ่มละมุนมาก", hint: "Veal = เนื้อลูกวัว (Beef = เนื้อวัวโต)" },
+            { en: "Beef", th: "เนื้อวัว", cat: "meat_cuts", desc: "คำอ่าน: บีฟ | เนื้อวัวทั่วไป ชิ้นเนื้อหลักสำหรับสเต๊กและแกง", hint: "Beef = เนื้อวัว" },
+            { en: "Rump", th: "เนื้อสะโพก", cat: "meat_cuts", desc: "คำอ่าน: รัมป์ | ชิ้นส่วนเนื้อสะโพกช่วงท้าย มีความแน่นและรสชาติเนื้อเด่นชัด", hint: "Rump หมายถึงบริเวณบั้นท้ายหรือสะโพก" },
+            { en: "Filet mignon", th: "เนื้อสันใน (ฟิเลมิยอง)", cat: "meat_cuts", desc: "คำอ่าน: ฟิ-เล มี-ยอง | เนื้อสันในส่วนที่นุ่มที่สุดและไร้ไขมัน", hint: "รากศัพท์ภาษาฝรั่งเศส หมายถึงชิ้นเนื้อสันในนุ่มพิเศษ" },
+            { en: "Sirloin", th: "เนื้อสันนอก", cat: "meat_cuts", desc: "คำอ่าน: เซอร์-ลอยน์ | ชิ้นเนื้อสันช่วงเอว มีขอบไขมันด้านข้างและรสชาติเข้มข้น", hint: "Sirloin = เนื้อสันนอกยอดนิยมในร้านสเต๊ก" }
+        ];
+
+        const STORAGE_KEY = 'meat_protein_vocab_flashcards_v1';
+        let progressData = {};
+        let currentFilter = 'all';
+        let isEnglishFront = true;
+        let filteredIndices = [];
+        let activeQueue = [];
+        let currentQueueIndex = 0;
+        let isFlipped = false;
+
+        window.onload = () => {
+            loadProgress();
+            applyFilterAndInitQueue();
+            renderCard();
+
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    toggleFlip();
+                } else if (e.code === 'ArrowRight') {
+                    markCurrentCard('known');
+                } else if (e.code === 'ArrowLeft') {
+                    markCurrentCard('unknown');
+                } else if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+                    e.preventDefault();
+                    toggleFlip();
+                }
+            });
+        };
+
+        function loadProgress() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    progressData = JSON.parse(saved);
+                } catch (e) {
+                    progressData = {};
+                }
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+            updateDashboardStats();
+        }
+
+        function changeFilter(category) {
+            currentFilter = category;
+            
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.className = 'filter-tab px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 transition';
+            });
+            const activeTab = document.getElementById(`tab-${category}`);
+            if (activeTab) {
+                activeTab.className = 'filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-rose-700 text-white shadow-sm transition';
+            }
+
+            applyFilterAndInitQueue();
+            renderCard();
+            showToast(`สลับไปยังหมวด: ${getCategoryLabel(category)}`, 'info');
+        }
+
+        function getCategoryLabel(cat) {
+            switch(cat) {
+                case 'meat_cuts': return 'เนื้อสัตว์และชิ้นส่วน';
+                case 'seafood_water': return 'กุ้ง สัตว์น้ำ และของทะเล';
+                case 'poultry_egg': return 'ไก่ เป็ด และเมนูไข่';
+                case 'tofu': return 'กลุ่มเต้าหู้';
+                default: return 'คำศัพท์ทั้งหมด (40 คำ)';
+            }
+        }
+
+        function toggleStudyMode() {
+            isEnglishFront = !isEnglishFront;
+            document.getElementById('studyModeLabel').innerText = isEnglishFront ? "EN → TH" : "TH → EN";
+            renderCard();
+            showToast(`เปลี่ยนโหมดเป็น: ${isEnglishFront ? "หน้าอังกฤษ / หลังไทย" : "หน้าไทย / หลังอังกฤษ"}`, 'info');
+        }
+
+        function applyFilterAndInitQueue() {
+            filteredIndices = [];
+            rawMeatData.forEach((item, index) => {
+                if (currentFilter === 'all' || item.cat === currentFilter) {
+                    filteredIndices.push(index);
+                }
+            });
+
+            activeQueue = [];
+            
+            // Priority 1: Unknown items (red)
+            filteredIndices.forEach(idx => {
+                const item = rawMeatData[idx];
+                if (progressData[item.en] === 'unknown') {
+                    activeQueue.push(idx);
+                }
+            });
+
+            // Priority 2: Unstudied items
+            filteredIndices.forEach(idx => {
+                const item = rawMeatData[idx];
+                if (!progressData[item.en]) {
+                    activeQueue.push(idx);
+                }
+            });
+
+            // Fallback: If all are mastered, reload all for review
+            if (activeQueue.length === 0) {
+                activeQueue = [...filteredIndices];
+            }
+
+            activeQueue = shuffleArray(activeQueue);
+            currentQueueIndex = 0;
+        }
+
+        function shuffleArray(arr) {
+            let array = [...arr];
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderCard() {
+            isFlipped = false;
+            const cardContainer = document.getElementById('cardContainer');
+            cardContainer.classList.remove('flipped');
+
+            if (activeQueue.length === 0 || currentQueueIndex >= activeQueue.length) {
+                checkCompletionState();
+                return;
+            }
+
+            const meatIndex = activeQueue[currentQueueIndex];
+            const item = rawMeatData[meatIndex];
+
+            const frontText = isEnglishFront ? item.en : item.th;
+            const backText = isEnglishFront ? item.th : item.en;
+
+            document.getElementById('mainTextFront').innerText = frontText;
+            document.getElementById('subTextFront').innerText = isEnglishFront ? "แตะเพื่อดูคำแปลไทย" : "แตะเพื่อดูคำศัพท์อังกฤษ";
+            document.getElementById('badgeFront').innerText = getCategoryShortLabel(item.cat);
+
+            document.getElementById('mainTextBack').innerText = backText;
+            document.getElementById('subTextBack').innerText = frontText;
+            document.getElementById('descBack').innerText = item.desc;
+            document.getElementById('hintBack').innerText = item.hint;
+            document.getElementById('cardCounterBack').innerText = `#${meatIndex + 1} / ${rawMeatData.length}`;
+
+            applyCardColors(item.en);
+            updateDashboardStats();
+        }
+
+        function getCategoryShortLabel(cat) {
+            switch(cat) {
+                case 'meat_cuts': return 'ชิ้นส่วนเนื้อสัตว์';
+                case 'seafood_water': return 'สัตว์น้ำ / ของทะเล';
+                case 'poultry_egg': return 'สัตว์ปีก / ไข่';
+                case 'tofu': return 'เต้าหู้แปรรูป';
+                default: return 'เนื้อสัตว์และโปรตีน';
+            }
+        }
+
+        function applyCardColors(wordKey) {
+            const front = document.getElementById('cardFront');
+            const back = document.getElementById('cardBack');
+            const status = progressData[wordKey];
+
+            front.className = front.className.replace(/border-emerald-\d+|border-rose-\d+|border-zinc-\d+/g, '').trim();
+            back.className = back.className.replace(/border-emerald-\d+|border-rose-\d+|border-zinc-\d+/g, '').trim();
+
+            if (status === 'known') {
+                front.classList.add('border-emerald-500');
+                back.classList.add('border-emerald-500');
+            } else if (status === 'unknown') {
+                front.classList.add('border-rose-500');
+                back.classList.add('border-rose-500');
+            } else {
+                front.classList.add('border-zinc-200');
+                back.classList.add('border-zinc-200');
+            }
+        }
+
+        function updateDashboardStats() {
+            let knownCount = 0;
+            let unknownCount = 0;
+
+            filteredIndices.forEach(idx => {
+                const item = rawMeatData[idx];
+                if (progressData[item.en] === 'known') knownCount++;
+                if (progressData[item.en] === 'unknown') unknownCount++;
+            });
+
+            document.getElementById('statKnown').innerText = knownCount;
+            document.getElementById('statUnknown').innerText = unknownCount;
+            document.getElementById('statQueue').innerText = Math.max(0, activeQueue.length - currentQueueIndex);
+
+            const totalInFilter = filteredIndices.length;
+            const percent = totalInFilter > 0 ? Math.round((knownCount / totalInFilter) * 100) : 0;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+            document.getElementById('progressPercent').innerText = `${percent}%`;
+            document.getElementById('progressLabel').innerText = `ความคืบหน้า (${knownCount}/${totalInFilter} คำ)`;
+        }
+
+        function toggleFlip() {
+            isFlipped = !isFlipped;
+            const cardContainer = document.getElementById('cardContainer');
+            if (isFlipped) {
+                cardContainer.classList.add('flipped');
+            } else {
+                cardContainer.classList.remove('flipped');
+            }
+        }
+
+        function markCurrentCard(status) {
+            if (activeQueue.length === 0) return;
+
+            const meatIndex = activeQueue[currentQueueIndex];
+            const item = rawMeatData[meatIndex];
+
+            progressData[item.en] = status;
+            saveProgress();
+            applyCardColors(item.en);
+
+            if (status === 'unknown') {
+                // RED LOOP LOGIC: Re-insert this card 3-4 positions ahead in the active queue
+                const reinsertOffset = Math.min(activeQueue.length, currentQueueIndex + 4);
+                activeQueue.splice(reinsertOffset, 0, meatIndex);
+                showToast(`วนคำว่า "${item.en}" กลับเข้าคิวเพื่อย้ำซ้ำ!`, 'rose');
+            } else if (status === 'known') {
+                showToast(`จำได้แล้ว! "${item.en}"`, 'emerald');
+            }
+
+            setTimeout(() => {
+                currentQueueIndex++;
+                if (currentQueueIndex >= activeQueue.length) {
+                    const hasUnknownInFilter = filteredIndices.some(idx => progressData[rawMeatData[idx].en] === 'unknown');
+                    if (hasUnknownInFilter) {
+                        showToast('กำลังวนรอบคำสีแดงที่ยังจำไม่ได้...', 'rose');
+                        applyFilterAndInitQueue();
+                    } else {
+                        const allKnown = filteredIndices.every(idx => progressData[rawMeatData[idx].en] === 'known');
+                        if (allKnown) {
+                            showCelebrationModal();
+                            return;
+                        } else {
+                            applyFilterAndInitQueue();
+                        }
+                    }
+                }
+                renderCard();
+            }, 250);
+        }
+
+        function prevCard() {
+            if (currentQueueIndex > 0) {
+                currentQueueIndex--;
+                renderCard();
+            } else {
+                showToast('นี่คือคำแรกสุดของรอบนี้แล้วครับ', 'info');
+            }
+        }
+
+        function shuffleQueue() {
+            activeQueue = shuffleArray(activeQueue);
+            currentQueueIndex = 0;
+            renderCard();
+            showToast('สุ่มลำดับคิวคำศัพท์ใหม่เรียบร้อย!', 'rose');
+        }
+
+        function playAudio(event) {
+            event.stopPropagation();
+            if (activeQueue.length === 0) return;
+            
+            const meatIndex = activeQueue[currentQueueIndex];
+            const item = rawMeatData[meatIndex];
+            const textToSpeak = item.en;
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                showToast('เบราว์เซอร์ไม่รองรับเสียงอ่าน', 'info');
+            }
+        }
+
+        function checkCompletionState() {
+            const allKnown = filteredIndices.every(idx => progressData[rawMeatData[idx].en] === 'known');
+            if (allKnown) {
+                showCelebrationModal();
+            }
+        }
+
+        function showCelebrationModal() {
+            document.getElementById('celebrationModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('celebrationModal').classList.add('hidden');
+        }
+
+        function restartAll() {
+            closeModal();
+            activeQueue = shuffleArray([...filteredIndices]);
+            currentQueueIndex = 0;
+            renderCard();
+        }
+
+        function confirmReset() {
+            const confirmed = window.confirm("ต้องการรีเซ็ตประวัติความจำ (สีเขียว-แดง) ทั้งหมดของชุดนี้ใช่หรือไม่?");
+            if (confirmed) {
+                progressData = {};
+                localStorage.removeItem(STORAGE_KEY);
+                applyFilterAndInitQueue();
+                renderCard();
+                showToast('รีเซ็ตข้อมูลความคืบหน้าทั้งหมดแล้ว', 'rose');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMessage.innerText = message;
+
+            if (type === 'rose') {
+                toastIcon.className = 'ph ph-warning-circle text-xl text-rose-400';
+            } else if (type === 'emerald') {
+                toastIcon.className = 'ph ph-check-circle text-xl text-emerald-400';
+            } else {
+                toastIcon.className = 'ph ph-info text-xl text-rose-400';
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
